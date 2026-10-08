@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macrame math - how much cord, honestly</title>
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--ink:#2c241b;--mut:#6f6455;--tl:#8a5a2b;--ok:#e3f1e4;--oktx:#1e6b34;--bad:#fbe4e0;--badtx:#a03423;--warn:#fdf0dc;--warntx:#8a5a13}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:26px 16px 60px}
+.hero{max-width:760px;margin:8px auto 22px;text-align:center}
+.hero p{color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.card h2{margin:0 0 12px;font-size:17px}
+label{display:block;font-size:13px;color:var(--mut);margin-top:10px}
+input,select{width:100%;padding:10px;border:1px solid #ddd3c4;border-radius:8px;font-size:15px;margin-top:3px;background:#fff}
+button{margin-top:14px;width:100%;padding:11px;border:0;border-radius:9px;background:var(--tl);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.big{font-size:34px;font-weight:700;margin:14px 0 2px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:10px}
+.pill{display:inline-block;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:600;margin:6px 0}
+.pill.ok{background:var(--ok);color:var(--oktx)}
+.pill.bad{background:var(--bad);color:var(--badtx)}
+.pill.warn{background:var(--warn);color:var(--warntx)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+td{padding:7px 0;border-bottom:1px solid #ece4d6}
+td:last-child{text-align:right;font-weight:600}
+.note{font-size:12.5px;color:var(--mut);margin-top:14px}
+.err{color:var(--badtx);font-weight:600;margin-top:10px}
+a{color:var(--tl)}
+</style>
+</head>
+<body>
+<main>
+<div class="hero">
+<p>The pattern says "cut 8 cords of 3m" and stops there. Whether your piece eats 30 meters or 340 is multiplication - knot style, finished size, cord thickness. Run yours before the scissors.</p>
+</div>
+<div class="grid">
+<div class="card">
+<h2>Your wall hanging</h2>
+<label>Finished length (cm)</label>
+<input id="p_l" type="number" value="60" min="0">
+<label>Width (cm)</label>
+<input id="p_w" type="number" value="30" min="0">
+<label>Knot style</label>
+<select id="p_s"></select>
+<label>Cord thickness (mm)</label>
+<select id="p_mm">
+<option value="2">2 mm</option>
+<option value="3" selected>3 mm</option>
+<option value="4">4 mm</option>
+<option value="5">5 mm</option>
+</select>
+<button id="p_go">Plan the piece</button>
+<div class="big" id="p_total">-</div>
+<div class="sub">meters of cord to buy</div>
+<div id="p_pill"></div>
+<table>
+<tr><td>cords on the dowel</td><td id="p_cords">-</td></tr>
+<tr><td>cut each cord at</td><td id="p_cut">-</td></tr>
+</table>
+<p class="note" id="p_note"></p>
+</div>
+<div class="card">
+<h2>Your stash</h2>
+<label>Meters the piece needs</label>
+<input id="s_need" type="number" value="343.2" min="0">
+<label>Meters on the shelf</label>
+<input id="s_have" type="number" value="200" min="0">
+<button id="s_go">Check the stash</button>
+<div class="big" id="s_big">-</div>
+<div class="sub">the honest answer</div>
+<div id="s_pill"></div>
+</div>
+<div class="card">
+<h2>Your plant hanger</h2>
+<label>Pot diameter (cm)</label>
+<input id="h_d" type="number" value="15" min="0">
+<label>Drop length (cm)</label>
+<input id="h_l" type="number" value="80" min="0">
+<button id="h_go">Plan the hanger</button>
+<div class="big" id="h_total">-</div>
+<div class="sub">meters of cord</div>
+<div id="h_pill"></div>
+<table>
+<tr><td>arms</td><td id="h_arms">-</td></tr>
+<tr><td>cord per arm</td><td id="h_arm">-</td></tr>
+</table>
+</div>
+</div>
+<p class="note">Knot-consumption factors (4x open, 5.5x dense, 6x spiral), spacing norms, fringe and loop allowances are labeled guidance from published macrame norms; your tension and knots move the real meters. The arithmetic on top of them is exact. <a href="/">Why this exists</a></p>
+</main>
+<script src="engine.js?v=1"></script>
+<script>
+const $=id=>document.getElementById(id);
+const sel=$('p_s');
+Object.entries(Macramemath.styles).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=v.label;sel.appendChild(o);});
+function show(id,txt){$(id).textContent=txt;}
+function pill(id,cls,txt){$(id).innerHTML='<span class="pill '+cls+'">'+txt+'</span>';}
+$('p_go').onclick=function(){
+  try{
+    const r=Macramemath.plan(parseFloat($('p_l').value),parseFloat($('p_w').value),sel.value,parseFloat($('p_mm').value));
+    show('p_total',r.totalM+' m');
+    pill('p_pill',r.totalM<200?'ok':'warn',r.verdict);
+    show('p_cords',r.cords);
+    show('p_cut',r.cutLenCm+' cm');
+    show('p_note',r.note);
+    show('s_need',r.totalM);$('s_need').value=r.totalM;
+  }catch(e){pill('p_pill','bad',e.message);show('p_total','-');show('p_cords','-');show('p_cut','-');show('p_note','');}
+};
+$('s_go').onclick=function(){
+  try{
+    const r=Macramemath.stash(parseFloat($('s_need').value),parseFloat($('s_have').value));
+    show('s_big',r.covers?'covers it':'short '+r.shortfall+' m');
+    pill('s_pill',r.covers?'ok':'bad',r.verdict);
+  }catch(e){pill('s_pill','bad',e.message);show('s_big','-');}
+};
+$('h_go').onclick=function(){
+  try{
+    const r=Macramemath.hanger(parseFloat($('h_d').value),parseFloat($('h_l').value));
+    show('h_total',r.totalM+' m');
+    pill('h_pill','ok',r.verdict);
+    show('h_arms',r.arms);
+    show('h_arm',r.armCm+' cm');
+  }catch(e){pill('h_pill','bad',e.message);show('h_total','-');show('h_arms','-');show('h_arm','-');}
+};
+</script>
+</body>
+</html>
